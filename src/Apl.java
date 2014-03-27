@@ -30,6 +30,7 @@ public class Apl {
 	private int offsety = border;
 
 	private boolean negative = false;
+	private boolean single_quadrant = false;
 	
 	//private BufferedImage image = new BufferedImage(imgw, imgh, BufferedImage.TYPE_INT_RGB);
 	//private Graphics2D g2d = image.createGraphics();
@@ -195,6 +196,103 @@ public class Apl {
 			this.lastPoint.y = y;
 		}
 	}
+
+	private int parseValue(String s) {
+		boolean negative = false;
+		// strip minus signs
+		if (s.startsWith("-")) { 
+			s = s.substring(1);
+			negative = true;
+		}
+		s = addLeadingZeroes(s);
+		s = addDecimalPoint(s);
+		int i = (int)Math.round(Double.valueOf(s)*(double)this.ppi);
+		if (negative) {
+			i = i*-1;
+		}
+		return i;
+	}
+	
+	private String addDecimalPoint(String s) {
+		return s.substring(0, 3) + "." + s.substring(3);
+	}
+	
+	private String addLeadingZeroes(String s) {
+		while (s.length() < 7) {
+			s = "0"+s;
+		}
+		return s;
+	}
+	
+	public void drawArc(String line) {
+		int xpos = line.indexOf("X");
+		int ypos = line.indexOf("Y");
+		int ipos = line.indexOf("I");
+		int jpos = line.indexOf("J");
+		int dpos = line.indexOf("D");
+
+		String xstr = line.substring(xpos+1, ypos);
+		String ystr = line.substring(ypos+1, ipos);
+		String istr = line.substring(ipos+1, jpos);
+		String jstr = line.substring(jpos+1, dpos);
+		
+		int x = parseValue(xstr);
+		int y = parseValue(ystr);
+		int i = parseValue(istr);
+		int j = parseValue(jstr);
+		
+		System.out.println("Arc: "+x+", "+y+", "+i+", "+j);
+
+		int centerx = (int)this.lastPoint.x + i;
+		int centery = (int)this.lastPoint.y + j;
+		
+		double radius = Functions.getDistance(lastPoint, centerx, centery);
+		double arcResolution = 0.00175;
+		
+		System.out.println("Circle at: ["+centerx+", "+centery+"] Radius:"+radius);
+		
+		// The parametric equation for a circle is
+		// 	x = cx + r * cos(a) 
+		// y = cy + r * sin(a) 
+		
+		// Where r is the radius, cx,cy the origin, 
+		// and a the angle from 0..2PI radians or 0..360 degrees.
+		
+//		int xx = (int)Math.round(centerx + radius * Math.cos(arcResolution));
+//		int yy = (int)Math.round(centery + radius * Math.sin(arcResolution));
+		
+		if (line.endsWith("D01*")) { // move with shutter OPEN
+			// make a path from lastPoint to x,y
+			double angle = 2 * Math.PI;
+			while (angle > 0) {
+				int xx = (int)Math.round(centerx + radius * Math.cos(angle));
+				int yy = (int)Math.round(centery + radius * Math.sin(angle));
+
+				this.aperture.draw(this.g2d, xx, yy, this.imgw, this.imgh, this.offsetx, this.offsety, this.negative);
+				this.lastPoint.x = xx;
+				this.lastPoint.y = yy;
+			
+				angle = angle - arcResolution;
+			}
+		
+			
+//			double distance = Functions.getDistance(lastPoint, x, y);
+//			while(distance > this.step) {
+//				Point2D.Double next = Functions.calcStep(lastPoint, x, y, this.step);
+//								
+//				int xx = (int)Math.round(next.x);
+//				int yy = (int)Math.round(next.y);
+//				this.aperture.draw(this.g2d, xx, yy, this.imgw, this.imgh, this.offsetx, this.offsety, this.negative);
+//				this.lastPoint.x = next.x;
+//				this.lastPoint.y = next.y;
+//								
+//				distance = Functions.getDistance(lastPoint, x, y);
+//				//System.out.println("distance: "+distance);
+//			}
+		}
+	}
+
+	
 	
 	public void drill(String line) {
 		int xpos = line.indexOf("X");
@@ -217,7 +315,9 @@ public class Apl {
 		// add decimal point
 		xstr = xstr.substring(0, 2) + "." + xstr.substring(2);
 		ystr = ystr.substring(0, 2) + "." + ystr.substring(2);
-		
+		//System.out.println("xstr:"+xstr);
+		//System.out.println("ystr:"+xstr);
+				
 		int x = (int)Math.round(Double.valueOf(xstr)*(double)this.ppi);
 		int y = (int)Math.round(Double.valueOf(ystr)*(double)this.ppi);
 				
@@ -265,6 +365,15 @@ public class Apl {
 			System.out.println("Set unit to MM");
 		}
 		
+		if (line.startsWith("G74")) {
+			System.out.println("Selecting Single quadrant mode");
+			single_quadrant = true;
+		}
+		if (line.startsWith("G75")) {
+			System.out.println("Selecting Multi quadrant mode");
+			single_quadrant = false;
+		}
+		
 		if (line.startsWith("G90")) {
 			System.out.println("Set Coordinate format to Absolute notation");
 		}
@@ -281,6 +390,14 @@ public class Apl {
 			System.out.println("STOP");
 			return true;
 		}
+		
+		if (line.startsWith("G02")) {
+			drawArc(line);
+		}
+		if (line.startsWith("G03")) {
+			drawArc(line);
+		}
+		
 		
 		if (line.startsWith("X")) {
 			draw(line);
