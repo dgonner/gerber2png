@@ -1,6 +1,6 @@
 # gerber2png
 
-=== Converts Gerber files from KiCad to PNG files for Fab Modules ===
+### Converts Gerber files from KiCad to PNG files for Fab Modules 
 
 For makers visiting a fablab that uses fabmodules for PCB manufacturing.
 The toolchain is expecting you to use Cadsoft Eagle for your PCB designs.
