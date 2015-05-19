@@ -1,41 +1,28 @@
 import java.io.*;
 import java.util.*;
-import java.awt.*;
-import java.awt.image.*;
-import javax.imageio.*;
-import javax.imageio.metadata.*;
-import javax.imageio.stream.*;
 import java.awt.geom.Point2D;
 
 public class Apl {
 
 	// GLOBAL OUTPUT SETTINGS
-	private int ppi = 1000;
-	private double board_width = 13; // mm
-	private double board_height = 13; // mm
-	private double border_mm = 1; // mm border around entire image
+	private	String dir = "/home/daveg/Electronics/relay-clock/plots/";
+	private	String project = "relay-clock";
+
+	private boolean process_F_Cu = false;
+	private boolean process_B_Cu = true;
+	private boolean process_NPTH = false;
+
+	private int ppi = 1000; 		// pixels per inch
+	private double border_mm = 1; 	// mm border around entire image
 	
 	// ==============================
 	private double scale = 1;
 	private double step = 0.5; // subpixel stepping
-
 	private int border = (int)Math.round(border_mm/25.4*ppi); // pixel border around entire image
-	private int imgw = 2 * border + (int)Math.round(board_width/25.4*ppi);
-	private int imgh = 2 * border + (int)Math.round(board_height/25.4*ppi);
-		
-	//private int imgw = 2000;
-	//private int imgh = 1200;
-	
 	private int offsetx = border;
 	private int offsety = border;
-
-	private boolean negative = false;
 	private boolean single_quadrant = false;
-	
-	//private BufferedImage image = new BufferedImage(imgw, imgh, BufferedImage.TYPE_INT_RGB);
-	//private Graphics2D g2d = image.createGraphics();
-	private BufferedImage image;
-	private Graphics2D g2d;		
+	private MyGraphics myg = new MyGraphics();
 	private int linenumber = 0;
 	private HashMap<Integer,Aperture> apertures = new HashMap<Integer,Aperture>();
 	private Aperture aperture = null;
@@ -144,14 +131,6 @@ public class Apl {
 		String xstr = line.substring(xpos+1, ypos);
 		String ystr = line.substring(ypos+1, dpos);
 		
-		// strip minus signs
-		//if (xstr.startsWith("-")) { 
-		//	xstr = xstr.substring(1);
-		//}
-		//if (ystr.startsWith("-")) { 
-		//	ystr = ystr.substring(1);
-		//}
-				
 		// add leading zeroes
 		while (xstr.length() < 7) {
 			xstr = "0"+xstr;
@@ -166,9 +145,6 @@ public class Apl {
 		
 		int x = (int)Math.round(Double.valueOf(xstr)*(double)this.ppi);
 		int y = (int)Math.round(Double.valueOf(ystr)*(double)this.ppi);
-		
-		//x = Math.abs(x); // invert
-		//y = Math.abs(y); // invert
 				
 		if (line.endsWith("D01*")) { // move with shutter OPEN
 			// make a path from lastPoint to x,y
@@ -178,7 +154,7 @@ public class Apl {
 								
 				int xx = (int)Math.round(next.x);
 				int yy = (int)Math.round(next.y);
-				this.aperture.draw(this.g2d, xx, yy, this.imgw, this.imgh, this.offsetx, this.offsety, this.negative);
+				this.aperture.draw(this.myg, xx, yy, this.offsetx, this.offsety);
 				this.lastPoint.x = next.x;
 				this.lastPoint.y = next.y;
 								
@@ -191,7 +167,7 @@ public class Apl {
 			this.lastPoint.y = y;
 		}
 		if (line.endsWith("D03*")) { // flash
-			this.aperture.draw(this.g2d, x, y, this.imgw, this.imgh, this.offsetx, this.offsety, this.negative);
+			this.aperture.draw(this.myg, x, y, this.offsetx, this.offsety);
 			this.lastPoint.x = x;
 			this.lastPoint.y = y;
 		}
@@ -268,7 +244,7 @@ public class Apl {
 				int xx = (int)Math.round(centerx + radius * Math.cos(angle));
 				int yy = (int)Math.round(centery + radius * Math.sin(angle));
 
-				this.aperture.draw(this.g2d, xx, yy, this.imgw, this.imgh, this.offsetx, this.offsety, this.negative);
+				this.aperture.draw(this.myg, xx, yy, this.offsetx, this.offsety);
 				this.lastPoint.x = xx;
 				this.lastPoint.y = yy;
 			
@@ -323,7 +299,7 @@ public class Apl {
 				
 		y = Math.abs(y); // invert
 		
-		this.tool.draw(this.g2d, x, y, this.imgw, this.imgh, this.offsetx, this.offsety, true);
+		this.tool.draw(this.myg, x, y, this.offsetx, this.offsety, true);
 		this.lastPoint.x = x;
 		this.lastPoint.y = y;
 	}
@@ -409,6 +385,7 @@ public class Apl {
 	
 	
 	public boolean processDrill(String line) {
+		
 		this.linenumber++;
 		
 		line = line.trim().toUpperCase();
@@ -499,96 +476,24 @@ public class Apl {
 		}	
 	}
 
-	private void newImageFile() {
-		this.image = new BufferedImage(imgw, imgh, BufferedImage.TYPE_INT_RGB);
-		this.g2d = image.createGraphics();	
-	}
 
-	 private void saveGridImage(BufferedImage gridImage, File output) throws IOException {
-	    output.delete();
-
-	    final String formatName = "png";
-
-	    for (Iterator<ImageWriter> iw = ImageIO.getImageWritersByFormatName(formatName); iw.hasNext();) {
-	       ImageWriter writer = iw.next();
-	       ImageWriteParam writeParam = writer.getDefaultWriteParam();
-	       ImageTypeSpecifier typeSpecifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
-	       IIOMetadata metadata = writer.getDefaultImageMetadata(typeSpecifier, writeParam);
-	       if (metadata.isReadOnly() || !metadata.isStandardMetadataFormatSupported()) {
-	          continue;
-	       }
-
-	       setDPI(metadata, this.ppi);
-
-	       final ImageOutputStream stream = ImageIO.createImageOutputStream(output);
-	       try {
-	          writer.setOutput(stream);
-	          writer.write(metadata, new IIOImage(gridImage, null, metadata), writeParam);
-	       } finally {
-	          stream.close();
-	       }
-	       break;
-	    }
-	 }
-
-	 private void setDPI(IIOMetadata metadata, int DPI) throws IIOInvalidTreeException {
-	    // for PMG, it's dots per millimeter
-		double INCH_2_MM = 25.4; 
-	    double dotsPerMilli = (double)DPI / INCH_2_MM;
-
-	    IIOMetadataNode horiz = new IIOMetadataNode("HorizontalPixelSize");
-	    horiz.setAttribute("value", Double.toString(dotsPerMilli));
-
-	    IIOMetadataNode vert = new IIOMetadataNode("VerticalPixelSize");
-	    vert.setAttribute("value", Double.toString(dotsPerMilli));
-
-	    IIOMetadataNode dim = new IIOMetadataNode("Dimension");
-	    dim.appendChild(horiz);
-	    dim.appendChild(vert);
-
-	    IIOMetadataNode root = new IIOMetadataNode("javax_imageio_1.0");
-	    root.appendChild(dim);
-
-	    metadata.mergeTree("javax_imageio_1.0", root);
-	 }
-	
-	
-	private void saveImageFile(String filename) {
-		// save the buffered image
-		try {
-		    File outputfile = new File(filename);
-		    saveGridImage(this.image, outputfile);
-		    //ImageIO.write(this.image, "png", outputfile);
-		} catch (IOException e) {
-			System.out.println("Error (8): "+e);
-		}
-		System.out.println("Output image saved...");
-	}
-	
 	public Apl() {
-//		String dir = "c:/temp/keyboard controller/gerbers/";
-//		String dir = "c:/temp/arduino shield/plots/";
-//		String dir = "d:/Development-Dave/chocopasta2-prototype/pcb/1wire-breakout/plots/";
-//		String dir = "d:/Home-Dave/twinqle working/Fader Controller/plots/";
-		String dir = "d:/Development-Dave/GlucoseMeter/electronics/first_pcb/plots/";
-		String project = "first_pcb";
-		
-		newImageFile();
-		this.negative = false;
-		//processGerberFile(dir+project+"-B_Cu.gbl");
-		processGerberFile(dir+project+"-F_Cu.gtl");
-		processDrillFile(dir+project+"-NPTH.drl");
-		saveImageFile(dir+project+"-mill-traces.png");
-		
-		newImageFile();
-		this.negative = true;
-		g2d.setColor(Color.white);
-		g2d.fillRect(0, 0, this.imgw, this.imgh);
-		processGerberFile(dir+project+"-Edge_Cuts.gbr");
-		processDrillFile(dir+project+"-NPTH.drl");
-		Functions.floodFill(image, new Point(0, 0), Color.black);
-		saveImageFile(dir+project+"-mill-outline.png");
-	
+		String prefix = dir+project;
+
+		// process the largest image first, usually the outline. 
+		//then use the same image dimensions to make the traces image
+
+		processGerberFile(prefix+"-Edge_Cuts.gbr");
+		if (process_NPTH) processDrillFile(prefix+"-NPTH.drl");
+		processDrillFile(prefix+".drl");
+		myg.drawAndWritePNG(prefix+"-mill-outline.png", this.ppi, border, true); 
+
+		if (process_B_Cu) processGerberFile(prefix+"-B_Cu.gbl");
+		if (process_F_Cu) processGerberFile(prefix+"-F_Cu.gtl");
+		if (process_NPTH) processDrillFile(prefix+"-NPTH.drl");
+		processDrillFile(prefix+".drl");
+		myg.drawAndWritePNG(prefix+"-mill-traces.png", this.ppi, border, false); 
+
 	}
 	
 	public static void main(String[] args) {
