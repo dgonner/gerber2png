@@ -16,11 +16,9 @@ public class Apl {
 	private double border_mm = 1; 	// mm border around entire image
 	
 	// ==============================
-	private double scale = 1;
-	private double step = 0.5; // subpixel stepping
+	private double scale = 1; // 1 for mm
+	private double step = 1; // subpixel stepping 0.5
 	private int border = (int)Math.round(border_mm/25.4*ppi); // pixel border around entire image
-	private int offsetx = border;
-	private int offsety = border;
 	private boolean single_quadrant = false;
 	private MyGraphics myg = new MyGraphics();
 	private int linenumber = 0;
@@ -154,7 +152,7 @@ public class Apl {
 								
 				int xx = (int)Math.round(next.x);
 				int yy = (int)Math.round(next.y);
-				this.aperture.draw(this.myg, xx, yy, this.offsetx, this.offsety);
+				this.aperture.draw(this.myg, xx, yy);
 				this.lastPoint.x = next.x;
 				this.lastPoint.y = next.y;
 								
@@ -167,7 +165,7 @@ public class Apl {
 			this.lastPoint.y = y;
 		}
 		if (line.endsWith("D03*")) { // flash
-			this.aperture.draw(this.myg, x, y, this.offsetx, this.offsety);
+			this.aperture.draw(this.myg, x, y);
 			this.lastPoint.x = x;
 			this.lastPoint.y = y;
 		}
@@ -228,15 +226,10 @@ public class Apl {
 		System.out.println("Circle at: ["+centerx+", "+centery+"] Radius:"+radius);
 		
 		// The parametric equation for a circle is
-		// 	x = cx + r * cos(a) 
+		// x = cx + r * cos(a) 
 		// y = cy + r * sin(a) 
-		
-		// Where r is the radius, cx,cy the origin, 
-		// and a the angle from 0..2PI radians or 0..360 degrees.
-		
-//		int xx = (int)Math.round(centerx + radius * Math.cos(arcResolution));
-//		int yy = (int)Math.round(centery + radius * Math.sin(arcResolution));
-		
+		// Where r is the radius, cx,cy the origin, and a the angle from 0..2PI radians or 0..360 degrees.
+	
 		if (line.endsWith("D01*")) { // move with shutter OPEN
 			// make a path from lastPoint to x,y
 			double angle = 2 * Math.PI;
@@ -244,30 +237,14 @@ public class Apl {
 				int xx = (int)Math.round(centerx + radius * Math.cos(angle));
 				int yy = (int)Math.round(centery + radius * Math.sin(angle));
 
-				this.aperture.draw(this.myg, xx, yy, this.offsetx, this.offsety);
+				this.aperture.draw(this.myg, xx, yy);
 				this.lastPoint.x = xx;
 				this.lastPoint.y = yy;
 			
 				angle = angle - arcResolution;
 			}
-		
-			
-//			double distance = Functions.getDistance(lastPoint, x, y);
-//			while(distance > this.step) {
-//				Point2D.Double next = Functions.calcStep(lastPoint, x, y, this.step);
-//								
-//				int xx = (int)Math.round(next.x);
-//				int yy = (int)Math.round(next.y);
-//				this.aperture.draw(this.g2d, xx, yy, this.imgw, this.imgh, this.offsetx, this.offsety, this.negative);
-//				this.lastPoint.x = next.x;
-//				this.lastPoint.y = next.y;
-//								
-//				distance = Functions.getDistance(lastPoint, x, y);
-//				//System.out.println("distance: "+distance);
-//			}
 		}
 	}
-
 	
 	
 	public void drill(String line) {
@@ -299,7 +276,7 @@ public class Apl {
 				
 		y = Math.abs(y); // invert
 		
-		this.tool.draw(this.myg, x, y, this.offsetx, this.offsety, true);
+		this.tool.draw(this.myg, x, y, true);
 		this.lastPoint.x = x;
 		this.lastPoint.y = y;
 	}

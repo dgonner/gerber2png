@@ -13,11 +13,11 @@ public class Aperture {
 	}
 
 
-	public void draw(MyGraphics myg, int x, int y, int offsetx, int offsety) {
-		this.draw(myg, x, y, offsetx, offsety, false);
+	public void draw(MyGraphics myg, int x, int y) {
+		this.draw(myg, x, y, false);
 	}
 
-	public void draw(MyGraphics myg, int x, int y, int offsetx, int offsety, boolean inverted) {
+	public void draw(MyGraphics myg, int x, int y, boolean inverted) {
 
 		if (this.type.equals("C")) { // draw circle
 			//System.out.println("Drawing CIRCLE at x,y ["+x+","+y+"]");
@@ -28,7 +28,7 @@ public class Aperture {
 			int xx = x - (int)Math.round(diameter/2.0);
 			int yy = y - (int)Math.round(diameter/2.0);
 				
-			myg.circle(offsetx+xx, offsety+yy, diameter, inverted);
+			myg.circle(xx, yy, diameter, inverted);
 		}
 		
 		if (this.type.equals("R")) { // draw rectangle
@@ -40,7 +40,7 @@ public class Aperture {
 			int xx = x - (int)Math.round(width/2.0);
 			int yy = y - (int)Math.round(height/2.0);
 						
-			myg.rect(offsetx+xx, offsety+yy, width, height);
+			myg.rect(xx, yy, width, height);
 		}
 
 		if (this.type.equals("O")) { // draw oval
@@ -64,18 +64,18 @@ public class Aperture {
 				int height = (int)Math.round(h);
 				int half_height = (int)Math.round(h/2.0);
 				
-				myg.circle(offsetx+(x-half_diameter), offsety+(y-half_height), diameter);
-				myg.circle(offsetx+(x-half_diameter), offsety+(y+half_height-diameter), diameter);
-				myg.circle(offsetx+(x-half_diameter), offsety+(y-half_diameter), diameter);
+				myg.circle(x-half_diameter, y-half_height, diameter);
+				myg.circle(x-half_diameter, y+half_height-diameter, diameter);
+				myg.circle(x-half_diameter, y-half_diameter, diameter);
 			} else {
 				int diameter = (int)Math.round(h);
 				int half_diameter = (int)Math.round(h/2.0);
 				int width = (int)Math.round(w);
 				int half_width = (int)Math.round(w/2.0);
 			
-				myg.circle(offsetx+(x-half_width), offsety+(y-half_diameter), diameter);
-				myg.circle(offsetx+(x+half_width-diameter), offsety+(y-half_diameter), diameter);
-				myg.circle(offsetx+(x-half_diameter), offsety+(y-half_diameter), diameter);
+				myg.circle(x-half_width, y-half_diameter, diameter);
+				myg.circle(x+half_width-diameter, y-half_diameter, diameter);
+				myg.circle(x-half_diameter, y-half_diameter, diameter);
 			}
 			
 			

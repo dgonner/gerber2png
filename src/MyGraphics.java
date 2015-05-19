@@ -165,8 +165,8 @@ public class MyGraphics {
 		}
 
 		if (imgw == 0 && imgh == 0) {
-			this.imgw = highX + border;
-			this.imgh = highY + border;
+			this.imgw = highX + 2 * border;
+			this.imgh = highY + 2 * border;
 		}	
 	}
 
@@ -195,7 +195,7 @@ public class MyGraphics {
 		 			g2d.setColor(Color.black);
 				}
 
-				g2d.fillOval(c.x, c.y, c.diameter, c.diameter);
+				g2d.fillOval(border+c.x, border+c.y, c.diameter, c.diameter);
 
 				if (c.inverted) {
 		 			g2d.setColor(Color.white);
@@ -204,11 +204,12 @@ public class MyGraphics {
 			} else 
 			if (o instanceof MyRect) {
 				MyRect r = (MyRect)o;
-				g2d.fillRect(r.x, r.y, r.width, r.height);
+				g2d.fillRect(border+r.x, border+r.y, r.width, r.height);
 			}
 
 		}
 
+		System.out.println("There were "+operations.size()+" operations in memory");
 		operations.clear();
 
 		if (negative) {
