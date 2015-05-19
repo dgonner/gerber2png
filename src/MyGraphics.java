@@ -165,8 +165,8 @@ public class MyGraphics {
 		}
 
 		if (imgw == 0 && imgh == 0) {
-			this.imgw = highX + 2 * border;
-			this.imgh = highY + 2 * border;
+			this.imgw = highX + border;
+			this.imgh = highY + border;
 		}	
 	}
 
