@@ -13,7 +13,7 @@ Export your pcb design from KiCad to the industry standard Gerber format.
 gerber2png then takes your gerber files and greates two png files from it.
 One png is for milling the traces, the other one is for the holes and outline.
 
-## KiCad Settings for Gerber export
+#### KiCad Settings for Gerber export
 
 written for Build (2013-jul-07)-stable of Pcbnew
 
